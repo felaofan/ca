@@ -1,9 +1,77 @@
 import React from 'react';
-import {Row, Col, Form, Input, Select} from "antd";
+import {Row, Col, Form, Input, Select, Button} from "antd";
 import './App.css';
 
-const {FormItem} = Form;
+const {Item: FormItem} = Form;
 const {Option} = Select;
+
+
+class Tr extends React.Component {
+  render() {
+    const {dataSource, form, onAdd, onDelete} = this.props;
+    const {getFieldDecorator} = form;
+    const {order, user} = dataSource;
+
+    return (
+      <Row>
+        <Col span={8}>
+          {}
+          <FormItem>
+            {
+              getFieldDecorator("order", {
+                rules: [
+                  {
+                    required: true,
+                    message: "必填"
+                  }
+                ],
+                initialValue: order,
+              })(<Input />)
+            }
+          </FormItem>
+
+        </Col>
+        <Col span={8}>
+          <FormItem>
+            {
+              getFieldDecorator("user", {
+                initialValue: user,
+              })(
+                <Select style={{width: 120}}>
+                  <Option value="jack">Jack</Option>
+                  <Option value="lucy">Lucy</Option>
+                  <Option value="Yiminghe">yiminghe</Option>
+                </Select>
+              )
+            }
+          </FormItem>
+        </Col>
+        <Col span={8}>
+          <Button onClick={() => onAdd()}>+</Button>
+          <Button onClick={() => onDelete()}>-</Button>
+        </Col>
+      </Row>
+    )
+  }
+}
+
+const FormTr = Form.create({
+  // 字段变化时，通知父组件
+  onFieldsChange(props, changedFields) {
+    const fields = {};
+    Object.keys(changedFields).forEach(key => {
+      fields[key] = changedFields[key].value;
+    });
+    console.log(changedFields)
+    props.onChange(fields);
+  },
+  // 将父组件中的值映射到表单中
+  mapPropsToFields(props) {
+    return Form.createFormField({
+      ...props.dataSource,
+    });
+  },
+})(Tr);
 
 class App extends React.Component {
 
@@ -14,7 +82,7 @@ class App extends React.Component {
         order: 1,
         user: ""
       }]
-    }
+    };
   }
 
   /**
@@ -38,24 +106,6 @@ class App extends React.Component {
   onDelete = (i) => {
     const newData = this.state.data.filter((record, j) => i !== j);
 
-    this.setData(newData);
-  }
-  /**
-   * 序号变化
-   */
-  onOrderChange = (value, i) => {
-    const newData = this.state.data.map((record, j) => {
-      return i === j ? {...record, order: value} : record;
-    });
-    this.setData(newData);
-  }
-  /**
-   * 用户变化
-   */
-  onUserChange = (value, i) => {
-    const newData = this.state.data.map((record, j) => {
-      return i === j ? {...record, user: value} : record;
-    });
     this.setData(newData);
   }
 
@@ -84,24 +134,25 @@ class App extends React.Component {
     return (
       <div>
         {data.map((record, index) => {
-          const {order, user} = record;
           return (
-            <Row key={index}>
-              <Col span={8}>
-                <Input value={order} onChange={(e) => this.onOrderChange(e.target.value, index)}/>
-              </Col>
-              <Col span={8}>
-                <Select style={{width: 120}} value={user} onChange={(value) => this.onUserChange(value, index)}>
-                  <Option value="jack">Jack</Option>
-                  <Option value="lucy">Lucy</Option>
-                  <Option value="Yiminghe">yiminghe</Option>
-                </Select>
-              </Col>
-              <Col span={8}>
-                <a href="javascript:;" style={{marginRight: "8px"}} onClick={() => this.onAdd(index)}>+</a>
-                <a href="javascript:;" onClick={() => this.onDelete(index)}>-</a>
-              </Col>
-            </Row>
+            <FormTr
+              key={index}
+              index={index}
+              dataSource={record}
+              onAdd={() => this.onAdd(index)}
+              onDelete={() => this.onDelete(index)}
+              onChange={(changedFields) => {
+                this.setData(data.map((record, j) => {
+                  if (index !== j) {
+                    return record;
+                  }
+                  return {
+                    ...record,
+                    ...changedFields
+                  }
+                }))
+              }}
+            />
           )
         })}
       </div>
